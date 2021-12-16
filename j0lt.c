@@ -320,7 +320,8 @@ main(int argc, char** argv)
         while (magnitude >= 1) {
                 nread = 0;
                 resolvptr = (char*)resolvlist;
-                printf("+ current attack magnitude %d \n", magnitude);
+                if (debugmode == true )
+                        printf("+ current attack magnitude %d \n", magnitude);
                 while (nread = readline(lineptr, resolvptr, MAX_LINE_SZ_J0LT, szresolvlist) != 0) {
                         resolvptr += nread;
                         szresolvlist -= nread;
