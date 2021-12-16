@@ -198,8 +198,6 @@ j0lt_checksum(const uint16_t* addr, size_t count);
 void
 print_hex(void* data, size_t len);
 
-bool debugmode;
-
 int
 main(int argc, char** argv)
 {
@@ -209,7 +207,7 @@ main(int argc, char** argv)
         char* resolvptr, * endptr;
         void* resolvlist;
         int status, i, opt, s, pathsz, nread;
-        bool hexmode, filereadmode;
+        bool debugmode, hexmode, filereadmode;
         size_t szresolvlist, szpayload, szpewpew;
         uint32_t spoofip, resolvip;
         uint16_t spoofport, magnitude;
@@ -219,8 +217,8 @@ main(int argc, char** argv)
         posix_spawnattr_t* attrp;
         posix_spawn_file_actions_t file_actions;
         posix_spawn_file_actions_t* file_actionsp;
-        if(debugmode == true)
-         printf("%s", g_menu);
+
+        printf("%s", g_menu);
 
         filereadmode = debugmode = hexmode = false;
         magnitude = spoofport = spoofip = 0;
@@ -310,22 +308,20 @@ main(int argc, char** argv)
                                 err_exit("* waitpid");
                 } while (!WIFEXITED(status) && !WIFSIGNALED(status));
         }
-        if(debugmode == true)
-         printf("+ resolv list saved to %s\n", pathptr);
+        printf("+ resolv list saved to %s\n", pathptr);
 
         if (read_file_into_mem(pathptr, &resolvlist, &szresolvlist) == false)
                 err_exit("* file read error");
         if (filereadmode == false) {
                 remove(pathptr);
-                if(debugmode == true)
-                  printf("- resolv list removed from %s\n", pathptr);
+                printf("- resolv list removed from %s\n", pathptr);
         }
 
         while (magnitude >= 1) {
                 nread = 0;
                 resolvptr = (char*)resolvlist;
-                if(debugmode == true)
-                 printf("+ current attack magnitude %d \n", magnitude);
+                if (debugmode == true )
+                        printf("+ current attack magnitude %d \n", magnitude);
                 while (nread = readline(lineptr, resolvptr, MAX_LINE_SZ_J0LT, szresolvlist) != 0) {
                         resolvptr += nread;
                         szresolvlist -= nread;
@@ -375,8 +371,7 @@ read_file_into_mem(const char* filename, void** data_out, size_t* size_out)
         }
 
         if (fread(mem, filesize, 1, file) != 1) {
-                if(debugmode == true)
-                 printf("* Failed to read data\n");
+                printf("* Failed to read data\n");
                 fclose(file);
                 free(mem);
                 return false;
@@ -660,14 +655,12 @@ print_hex(void* data, size_t len)
         size_t i, j;
         for (j = 0, i = 0; i < len; i++) {
                 if (i % 16 == 0) {
-                        if(debugmode == true)
-                         printf("\n0x%.4zx: ", j);
+                        printf("\n0x%.4zx: ", j);
                         j += 16;
                 }
                 if (i % 2 == 0)
                         putchar(' ');
-                if(debugmode == true)
-                 printf("%.2x", d[i]);
+                printf("%.2x", d[i]);
         }
         putchar('\n');
 }
