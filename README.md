@@ -1,6 +1,5 @@
-# j0lt.c DNS amplification (DDoS) attack tool
+# j0lt.c DNS amplification tool
   **Use with extreme caution**
-  > DNS amplification ddos attack tool, 
  ------------------------------------------------------------
  > * the-scientist@rootstorm.com
  > * https://www.rootstorm.com
