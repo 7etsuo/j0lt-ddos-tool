@@ -1,8 +1,10 @@
 # j0lt.c DNS amplification tool
   **Use with extreme caution**
  ------------------------------------------------------------
- > * the-scientist@rootstorm.com
- > * https://www.rootstorm.com
+> * snowcrash
+> * sn0w.crash@icloud.com
+> * https://github.com/snowcra5h/
+
  ------------------------------------------------------------
  > Knowledge:
  > * https://datatracker.ietf.org/doc/html/rfc1700    (NUMBERS)
