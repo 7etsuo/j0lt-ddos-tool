@@ -2,8 +2,8 @@
  *      _________  .__   __
  *     |__\   _  \ |  |_/  |_
  *     |  /  /_\  \|  |\   __\
- *     |  \  \_/   \  |_|  |        the-scientist@rootstorm.com
- * /\__|  |\_____  /____/__|          https://www.rootstorm.com
+ *     |  \  \_/   \  |_|  |              sn0w.crash@icloud.com
+ * /\__|  |\_____  /____/__|       https://github.com/snowcra5h
  * \______|      \/              ddos amplification attack tool
  * ------------------------------------------------------------
  * This is unpublished proprietary source code of the-scientist
