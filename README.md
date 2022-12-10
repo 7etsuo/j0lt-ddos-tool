@@ -5,7 +5,7 @@ _This tool is not weaponized, it is for educational purposes only._
 ------------------------------------------------------------
 ## Author
 > * snowcrash
-> * sn0w.crash@icloud.com
+> * snowcra5h@icloud.com
 > * https://github.com/snowcra5h/
  ------------------------------------------------------------
  ## Resources:
