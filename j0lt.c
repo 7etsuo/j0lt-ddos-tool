@@ -2,12 +2,12 @@
  *      _________  .__   __
  *     |__\   _  \ |  |_/  |_
  *     |  /  /_\  \|  |\   __\
- *     |  \  \_/   \  |_|  |              sn0w.crash@icloud.com
+ *     |  \  \_/   \  |_|  |               snowcra5h@icloud.com
  * /\__|  |\_____  /____/__|       https://github.com/snowcra5h
  * \______|      \/              ddos amplification attack tool
  * ------------------------------------------------------------
- * This is unpublished proprietary source code of the-scientist
- *             ** For educational purposes only **                           
+ * This is unpublished proprietary source code of snowcra5h
+ *          ** For educational purposes only **                           
  * ------------------------------------------------------------
  * Usage: sudo ./j0lt -t <target> -p <port> -m <magnitude>
  * (the-scientist㉿rs)-$ gcc j0lt.c -o j0lt
@@ -172,7 +172,7 @@ const char* g_menu = {
         " -r [resolv]<path>                : will not download list\n"
         "                                  : provide absolute path \n"
         " =========================================================\n"
-        "           sc1entist: https://www.rootstorm.com           \n"
+        "           snowcra5h: https://github.com/snowcra5h        \n"
 };
 
 bool
