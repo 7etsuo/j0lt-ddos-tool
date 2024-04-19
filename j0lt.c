@@ -43,6 +43,8 @@
 #include <unistd.h>
 #include <wait.h>
 
+#include "io.h"
+
 typedef struct __attribute__ ((packed, aligned (1)))
 {
   uint32_t sourceaddr;
@@ -173,11 +175,10 @@ const char *g_menu
         " =========================================================\n"
         "           snowcra5h: https://github.com/7etsuo           \n" };
 
-bool read_file_into_mem (const char *filename, void **data_out,
-                         size_t *size_out);
-size_t readline (char *src, char *dest, size_t srclim, size_t destlim);
 size_t forge_j0lt_packet (char *payload, uint32_t resolvip, uint32_t spoofip,
                           uint16_t spoofport);
+uint16_t j0lt_checksum (const uint16_t *addr, size_t count);
+
 bool insert_dns_header (uint8_t **buf, size_t *buflen);
 bool insert_dns_question (void **buf, size_t *buflen, const char *domain,
                           uint16_t query_type, uint16_t query_class);
@@ -187,10 +188,6 @@ bool insert_ip_header (uint8_t **buf, size_t *buflen, PSEUDOHDR *pheader,
                        uint32_t daddr, uint32_t saddr, size_t ulen);
 bool send_payload (const uint8_t *datagram, uint32_t daddr, uint16_t uh_dport,
                    size_t nwritten);
-bool insert_data (void **dst, size_t *dst_buflen, const void *src,
-                  size_t src_len);
-uint16_t j0lt_checksum (const uint16_t *addr, size_t count);
-void print_hex (void *data, size_t len);
 
 int
 main (int argc, char **argv)
@@ -358,54 +355,6 @@ main (int argc, char **argv)
 
   free (resolvlist);
   return 0;
-}
-
-bool
-read_file_into_mem (const char *filename, void **data_out, size_t *size_out)
-{
-  long filesize;
-  void *mem;
-  FILE *file;
-
-  file = fopen (filename, "rb");
-  if (file == NULL)
-    return false;
-
-  fseek (file, 0, SEEK_END);
-  filesize = ftell (file);
-  rewind (file);
-
-  mem = malloc (filesize);
-  if (mem == NULL)
-    {
-      fclose (file);
-      return false;
-    }
-
-  if (fread (mem, filesize, 1, file) != 1)
-    {
-      printf ("* Failed to read data\n");
-      fclose (file);
-      free (mem);
-      return false;
-    }
-
-  fclose (file);
-
-  *data_out = mem;
-  *size_out = filesize;
-  return true;
-}
-
-size_t
-readline (char *src, char *dest, size_t srclim, size_t destlim)
-{
-  size_t i;
-
-  for (i = 0; i < srclim - 1 && i < destlim && *dest != '\n'; ++i)
-    src[i] = *dest++;
-  src[i] = '\0';
-  return i;
 }
 
 size_t
@@ -615,18 +564,6 @@ send_payload (const uint8_t *datagram, uint32_t daddr, uint16_t uh_dport,
   return !(nread == -1 || nread != nwritten);
 }
 
-bool
-insert_data (void **dst, size_t *dst_buflen, const void *src, size_t src_len)
-{
-  if (*dst_buflen < src_len)
-    return false;
-
-  memcpy (*dst, src, src_len);
-  *dst += src_len;
-  *dst_buflen -= src_len;
-
-  return true;
-}
 
 uint16_t
 j0lt_checksum (const uint16_t *addr, size_t count)
@@ -646,23 +583,4 @@ j0lt_checksum (const uint16_t *addr, size_t count)
     sum = (sum & 0xffff) + (sum >> 16);
 
   return ~((uint16_t)((sum << 8) | (sum >> 8)));
-}
-
-void
-print_hex (void *data, size_t len)
-{
-  const uint8_t *d = (const uint8_t *)data;
-  size_t i, j;
-  for (j = 0, i = 0; i < len; i++)
-    {
-      if (i % 16 == 0)
-        {
-          printf ("\n0x%.4zx: ", j);
-          j += 16;
-        }
-      if (i % 2 == 0)
-        putchar (' ');
-      printf ("%.2x", d[i]);
-    }
-  putchar ('\n');
 }
