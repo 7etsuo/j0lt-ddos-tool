@@ -117,7 +117,7 @@ typedef struct __attribute__((packed, aligned(1))) {
     }                                                                      \
                                                                            \
     data = bigendian_data == 0 ? data : bigendian_data;                    \
-    for (int i = sizeof(data); *buflen != -1 && i > 0; i--) {              \
+    for (size_t i = sizeof(data); *buflen > 0 && i > 0; i--) {             \
       *(*buf)++ = (data & 0xff);                                           \
       data = (data >> 8);                                                  \
       (*buflen)--;                                                         \
@@ -283,14 +283,12 @@ void init_opts(JoltOptions *opts) {
 }
 
 int main(int argc, char **argv) {
-  FILE *fptr;
-  int status, i, opt, s, nread;
+  int status, i, s, nread;
   size_t szpayload, szpewpew;
   pid_t child_pid;
   sigset_t mask;
   posix_spawnattr_t attr;
   posix_spawnattr_t *attrp;
-  posix_spawn_file_actions_t file_actions;
   posix_spawn_file_actions_t *file_actionsp;
 
   printf("%s", g_menu);
@@ -345,8 +343,8 @@ int main(int argc, char **argv) {
     char *resolvptr = (char *)resolvlist;
     if (opts.debug_mode == true)
       printf("+ current attack nthreads %d \n", opts.nthreads);
-    while (nread = readline(lineptr, resolvptr, MAX_LINE_SZ_J0LT,
-                            szresolvlist) != 0) {
+    while ((nread = readline(lineptr, resolvptr, MAX_LINE_SZ_J0LT,
+                             szresolvlist)) != 0) {
       resolvptr += nread;
       szresolvlist -= nread;
       for (i = 0; isdigit(lineptr[i]); i++);
@@ -557,7 +555,7 @@ bool send_payload(const uint8_t *datagram, uint32_t daddr, uint16_t uh_dport,
                  (const struct sockaddr *)&addr, sizeof(addr));
 
   close(raw_sockfd);
-  return !(nread == -1 || nread != nwritten);
+  return !(nread == -1 || (size_t)nread != nwritten);
 }
 
 uint16_t j0lt_checksum(const uint16_t *addr, size_t count) {
