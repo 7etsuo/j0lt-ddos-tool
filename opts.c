@@ -9,7 +9,7 @@
 #include "opts.h"
 #include "result.h"
 
-const char *g_args = "xdt:p:m:r:";
+const char *g_args = "xdt:p:n:r:";
 
 Result_T get_opt_target(JoltOptions *opts, const char *optarg) {
   assert(opts != NULL && optarg != NULL);
@@ -34,9 +34,9 @@ Result_T get_opt_port(JoltOptions *opts, const char *optarg) {
   return RESULT_SUCCESS;
 }
 
-Result_T retrieve_max_threads(void) {
-  long nprocs = sysconf(_SC_NPROCESSORS_ONLN);
-  if (nprocs == -1) return RESULT_FAIL_THREAD;
+Result_T retrieve_max_threads(long *nprocs) {
+  *nprocs = sysconf(_SC_NPROCESSORS_ONLN);
+  if (*nprocs == -1) return RESULT_FAIL_THREAD;
 
   return RESULT_SUCCESS;
 }
@@ -47,10 +47,12 @@ Result_T get_opt_nthreads(JoltOptions *opts, const char *optarg) {
   errno = 0;
   char *endptr = NULL;
   opts->nthreads = (uint16_t)strtol(optarg, &endptr, 0);
-  if (errno != 0 || endptr == optarg || *endptr != '\0') return RESULT_FAIL_UNKNOWN;
+  if (errno != 0 || endptr == optarg || *endptr != '\0')
+    return RESULT_FAIL_UNKNOWN;
 
-  int max_threads = retrieve_max_threads();
-  if (opts->nthreads > max_threads || opts->nthreads <= 0)
+  long nprocs = 0;
+  if (retrieve_max_threads(&nprocs) != RESULT_SUCCESS ||
+      opts->nthreads > nprocs || opts->nthreads <= 0)
     return RESULT_FAIL_THREAD;
 
   return RESULT_SUCCESS;
