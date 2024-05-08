@@ -31,7 +31,7 @@ Result_T spawn_process(const char *path,
   if (access(path, X_OK) != 0) return RESULT_FAIL_PERM;
 
   pid_t child_pid;
-  int s = posix_spawn(&child_pid, path, file_actions, attr,(const char **) &path, environ);
+  int s = posix_spawn(&child_pid, path, file_actions, attr, &path, environ);
   if (s != 0) return RESULT_FAIL_IO;
 
   int status;
@@ -47,4 +47,3 @@ Result_T destroy_spawnattr(posix_spawnattr_t *attr) {
   if (s != 0) return RESULT_FAIL_ARG;
   return RESULT_SUCCESS;
 }
-

@@ -7,13 +7,16 @@
 #include <unistd.h>
 
 #include "opts.h"
+#include "result.h"
+
+const char *g_args = "xdt:p:m:r:";
 
 Result_T get_opt_target(JoltOptions *opts, const char *optarg) {
   assert(opts != NULL && optarg != NULL);
 
   while (*optarg == ' ') optarg++;
   opts->spoof_ip = inet_addr(optarg);
-  if (opts->spoof_ip == 0) return RESULT_FAILURE;
+  if (opts->spoof_ip == 0) return RESULT_FAIL_ARG;
 
   return RESULT_SUCCESS;
 }
@@ -24,7 +27,9 @@ Result_T get_opt_port(JoltOptions *opts, const char *optarg) {
   errno = 0;
   char *endptr = NULL;
   opts->spoof_port = (uint16_t)strtol(optarg, &endptr, 0);
-  if (errno != 0 || endptr == optarg || *endptr != '\0' || opts->spoof_port == 0) return RESULT_FAILURE;
+  if (errno != 0 || endptr == optarg || *endptr != '\0' ||
+      opts->spoof_port == 0)
+    return RESULT_FAIL_ARG;
 
   return RESULT_SUCCESS;
 }
@@ -42,10 +47,11 @@ Result_T get_opt_nthreads(JoltOptions *opts, const char *optarg) {
   errno = 0;
   char *endptr = NULL;
   opts->nthreads = (uint16_t)strtol(optarg, &endptr, 0);
-  if (errno != 0 || endptr == optarg || *endptr != '\0') return RESULT_FAILURE;
+  if (errno != 0 || endptr == optarg || *endptr != '\0') return RESULT_FAIL_UNKNOWN;
 
   int max_threads = retrieve_max_threads();
-  if (opts->nthreads > max_threads || opts->nthreads <= 0) return RESULT_FAIL_THREAD;
+  if (opts->nthreads > max_threads || opts->nthreads <= 0)
+    return RESULT_FAIL_THREAD;
 
   return RESULT_SUCCESS;
 }
@@ -74,13 +80,14 @@ Result_T parse_opts(JoltOptions *opts, int argc, const char **argv) {
         opts->debug_mode = true;
         break;
       default:
-        result = RESULT_FAILURE;
+        result = RESULT_FAIL_ARG;
         break;
     }
   } while ((opt = getopt(argc, (char *const *)argv, g_args)) != -1);
 
-  if (result == RESULT_FAILURE) 
-    fprintf(stderr, "Usage: ./j0lt -t target -p port -n nthreads [OPTION]...\n");
+  if (result == RESULT_FAIL_ARG)
+    fprintf(stderr,
+            "Usage: ./j0lt -t target -p port -n nthreads [OPTION]...\n");
 
   return result;
 }
@@ -93,5 +100,3 @@ void init_opts(JoltOptions *opts) {
   opts->debug_mode = false;
   opts->hex_mode = false;
 }
-
-

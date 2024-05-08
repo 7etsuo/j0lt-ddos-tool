@@ -1,6 +1,14 @@
 #ifndef OPTS_H
 #define OPTS_H
 
+#include "result.h"
+
+#include <limits.h>
+#include <stdbool.h>
+#include <stdint.h>
+
+extern const char *g_args;
+
 typedef struct JoltOptions {
   uint32_t spoof_ip;    // IP to spoof
   uint16_t spoof_port;  // Port to spoof
