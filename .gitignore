@@ -7,3 +7,4 @@ raw-udp
 olddns
 oldtestfiles
 .editorconfig
+*.o
