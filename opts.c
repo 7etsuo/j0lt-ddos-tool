@@ -9,7 +9,9 @@
 #include "opts.h"
 #include "result.h"
 
-const char *g_args = "xdt:p:n:r:";
+GLOBAL_STRING_TYPE GLOBAL_STRING_OPTS = "xdt:p:n:r:";
+
+char *optarg = NULL;
 
 Result_T get_opt_target(JoltOptions *opts, const char *optarg) {
   assert(opts != NULL && optarg != NULL);
@@ -58,12 +60,12 @@ Result_T get_opt_nthreads(JoltOptions *opts, const char *optarg) {
   return RESULT_SUCCESS;
 }
 
-Result_T parse_opts(JoltOptions *opts, int argc, const char **argv) {
+Result_T parse_opts(JoltOptions *opts, int argc, const char *const *const argv) {
   assert(argc > 0 && argv != NULL);
 
   Result_T result = RESULT_SUCCESS;
 
-  int opt = getopt(argc, (char *const *)argv, g_args);
+  int opt = getopt(argc, (char * const *)argv, GLOBAL_STRING_OPTS);
   do {
     switch (opt) {
       case 't':
@@ -85,7 +87,7 @@ Result_T parse_opts(JoltOptions *opts, int argc, const char **argv) {
         result = RESULT_FAIL_ARG;
         break;
     }
-  } while ((opt = getopt(argc, (char *const *)argv, g_args)) != -1);
+  } while ((opt = getopt(argc, (char * const *)argv, GLOBAL_STRING_OPTS)) != -1);
 
   if (result == RESULT_FAIL_ARG)
     fprintf(stderr,

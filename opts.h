@@ -1,13 +1,14 @@
 #ifndef OPTS_H
 #define OPTS_H
 
-#include "result.h"
-
 #include <limits.h>
 #include <stdbool.h>
 #include <stdint.h>
 
-extern const char *g_args;
+#include "result.h"
+#include "my_types.h"
+
+extern GLOBAL_STRING_TYPE GLOBAL_STRING_OPTS;
 
 typedef struct JoltOptions {
   uint32_t spoof_ip;    // IP to spoof
@@ -23,8 +24,7 @@ Result_T get_opt_nthreads(JoltOptions *opts, const char *optarg);
 Result_T retrieve_max_threads(long *nprocs);
 Result_T get_opt_port(JoltOptions *opts, const char *optarg);
 Result_T get_opt_target(JoltOptions *opts, const char *optarg);
-Result_T parse_opts(JoltOptions *opts, int argc, const char **argv);
+Result_T parse_opts(JoltOptions *opts, int argc, const char *const *const argv);
 void init_opts(JoltOptions *opts);
 
-#endif // OPTS_H
-
+#endif  // OPTS_H
