@@ -1,7 +1,7 @@
 CC=gcc
 CFLAGS=-Wall -Wextra
 TARGET=j0lt
-OBJS=j0lt.o io.o opts.o process_control.o
+OBJS=j0lt.o io.o opts.o process_control.o my_resolvlist.o
 
 all: $(TARGET)
 
@@ -19,6 +19,9 @@ opts.o: opts.c opts.h
 
 process_control.o: process_control.c process_control.h
 	$(CC) $(CFLAGS) -c process_control.c
+
+my_resolvlist.o: my_resolvlist.c my_resolvlist.h
+	$(CC) $(CFLAGS) -c my_resolvlist.c
 
 clean:
 	rm -f $(TARGET) $(OBJS)

@@ -19,46 +19,30 @@
  * ------------------------------------------------------------
  */
 
-#include <assert.h>
-#include <arpa/inet.h>
-#include <arpa/nameser.h>
-#include <arpa/nameser_compat.h>
-#include <bits/types.h>
-#include <ctype.h>
-#include <errno.h>
-#include <limits.h>
-#include <netdb.h>
-#include <netinet/in.h>
-#include <netinet/ip.h>
-#include <netinet/udp.h>
-#include <spawn.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <linux/wait.h>
-#include <unistd.h>
-#include <wait.h>
+#include <ctype.h>         // Added for isdigit
+#include <assert.h>        // Added for assert
+#include <netdb.h>         // Added for getprotobyname
+#include <arpa/nameser.h>  // Added for ns_t_ns, ns_c_in, ns_o_query, ns_r_noerror
+#include <arpa/inet.h>     // Added for inet_addr
+#include <netinet/in.h>    // Added for IPPROTO_RAW
+#include <netinet/ip.h>    // Added for struct iphdr
+#include <netinet/udp.h>  // Added for struct udphdr
+#include <stdbool.h>      // Added for bool
+#include <stdio.h>        // Added for printf, perror
+#include <stdlib.h>       // Added for exit, malloc, free
+#include <string.h>       // Added for memset, strlen, strtok_r
+#include <sys/socket.h>   // Added for socket, AF_INET, SOCK_RAW
+#include <unistd.h>       // Added for close
 
-// for optargs
-#include <getopt.h>
-#include <bits/getopt_core.h>
-#include <kpathsea/getopt.h>
+#include "io.h"      // Added for read_file_into_mem, readline, print_hex
+#include "result.h"  // Added for Result_T
+#include "process_control.h"  // Added for init_spawnattr, spawn_process, destroy_spawnattr
+#include "opts.h"             // Added for JoltOptions, init_opts, parse_opts
+#include "my_types.h"       // Added for GLOBAL_STRING_TYPE
+#include "my_resolvlist.h"  // Added for wget_resolvlist_and_save_path
 
-// for realpath
-#include <stdlib.h>
-#include <limits.h>
-
-#include "io.h"
-#include "result.h"
-#include "process_control.h"
-#include "opts.h"
-#include "my_types.h"
+#include <stdint.h>  // Added for uint32_t, uint16_t, uint8_t
+#include <stddef.h>  // Added for size_t
 
 typedef struct __attribute__((packed, aligned(1))) {
   uint32_t sourceaddr;
@@ -172,8 +156,6 @@ DEFINE_INSERT_FN(qword, uint64_t)
 #define PEWPEW_J0LT 100  // value for the tmc effect.
 #define MAX_LINE_SZ_J0LT 0x30
 
-char **environ;
-
 GLOBAL_STRING_TYPE GLOBAL_STRING_RESOLV_LIST_SAVE_NAME = "logs/j0lt-resolv.txt";
 GLOBAL_STRING_TYPE GLOBAL_STRING_MENU = {
     " =========================================================\n"
@@ -199,70 +181,6 @@ bool insert_ip_header(uint8_t **buf, size_t *buflen, PSEUDOHDR *pheader,
                       uint32_t daddr, uint32_t saddr, size_t ulen);
 bool send_payload(const uint8_t *datagram, uint32_t daddr, uint16_t uh_dport,
                   size_t nwritten);
-
-static char *get_current_directory_with_filename(const char *const filename) {
-  if (filename == NULL) return NULL;
-
-  char *cwd = getcwd(NULL, 0);
-  if (cwd == NULL) {
-    perror("Failed to get current directory");
-    return NULL;
-  }
-
-  size_t path_length = strlen(cwd) + strlen(filename) +
-                       2;  // +2 for the slash and null terminator.
-  char *full_path = malloc(path_length * sizeof(char));
-  if (full_path == NULL) {
-    perror("Failed to allocate memory for full path");
-    free(cwd);
-    return NULL;
-  }
-
-  snprintf(full_path, path_length, "%s/%s", cwd, filename);
-
-  free(cwd);
-
-  return full_path;
-}
-
-static Result_T do_wget_resolv_list(char *resolv_list_save_path) {
-  if (resolv_list_save_path == NULL) return RESULT_FAIL_IO;
-  char *wget[] = {"/bin/wget", "-O", resolv_list_save_path,
-                  "https://public-dns.info/nameservers.txt", NULL};
-
-#ifdef DEBUG
-  printf("+ wget command: ");
-  for (int i = 0; wget[i] != NULL; i++) printf("%s ", wget[i]);
-#endif  // DEBUG
-
-  posix_spawnattr_t attr = {0};
-  posix_spawn_file_actions_t *file_actionsp = NULL;
-
-  int status = init_spawnattr(&attr);
-  if (status != 0) return status;
-
-  status = spawn_process(wget[0], file_actionsp, &attr, wget, environ);
-  if (status != 0) return status;
-
-  status = destroy_spawnattr(&attr);
-  if (status != 0) return status;
-
-  return status;
-}
-
-Result_T wget_resolvlist_and_save_path(const char *const pathname,
-                                       char **result_path) {
-  *result_path = get_current_directory_with_filename(pathname);
-  if (*result_path == NULL) return RESULT_FAIL_IO;
-
-  int status = do_wget_resolv_list(*result_path);
-  if (status != RESULT_SUCCESS) {
-    free(*result_path);
-    *result_path = NULL;
-  }
-
-  return status;
-}
 
 int main(int argc, char **argv) {
   int i, nread;

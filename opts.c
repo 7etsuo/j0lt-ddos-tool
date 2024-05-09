@@ -96,6 +96,7 @@ Result_T parse_opts(JoltOptions *opts, int argc, const char *const *const argv) 
   return result;
 }
 
+
 void init_opts(JoltOptions *opts) {
   assert(opts != NULL);
   opts->spoof_ip = 0;
