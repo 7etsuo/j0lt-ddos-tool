@@ -10,14 +10,23 @@
 
 extern GLOBAL_STRING_TYPE GLOBAL_STRING_OPTS;
 
+typedef struct Target {
+  uint32_t ip;    // IP to attack
+  uint16_t port;  // Port to attack
+} Target;
+
+typedef struct DebugFlags {
+  uint16_t nthreads;  // nthreads of the attack
+  bool debug_mode;    // Debug mode flag
+  bool hex_mode;      // Hex dump mode flag
+} DebugFlags;
+
 typedef struct JoltOptions {
-  uint32_t spoof_ip;    // IP to spoof
-  uint16_t spoof_port;  // Port to spoof
-  uint16_t nthreads;    // nthreads of the attack
-  const char *pathptr;
-  char resolv_path[PATH_MAX];  // Path to the resolver list
-  bool debug_mode;             // Debug mode flag
-  bool hex_mode;               // Hex dump mode flag
+  uint32_t ip;        // IP to attack
+  uint16_t port;      // Port to attack
+  uint16_t nthreads;  // nthreads of the attack
+  bool debug_mode;    // Debug mode flag
+  bool hex_mode;      // Hex dump mode flag
 } JoltOptions;
 
 Result_T get_opt_nthreads(JoltOptions *opts, const char *optarg);
