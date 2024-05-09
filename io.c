@@ -1,5 +1,3 @@
-#include "io.h"
-
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -8,45 +6,49 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-bool read_file_into_mem(const char *filename, void **data_out,
-                        size_t *size_out) {
+#include "io.h"
+#include "result.h"
+
+Result_T read_file_into_mem(const char *filename, void **data_out,
+                            size_t *size_out) {
   if (filename == NULL || data_out == NULL || size_out == NULL) {
     fprintf(stderr, "NULL pointer error\n");
-    return false;
+    return RESULT_FAIL_ARG;
   }
 
   struct stat st;
   if (stat(filename, &st) != 0) {
     perror("Failed to get file size");
-    return false;
+    return RESULT_FAIL_IO;
   }
   size_t filesize = st.st_size;
 
   FILE *file = fopen(filename, "rb");
   if (file == NULL) {
     perror("Failed to open file");
-    return false;
+    return RESULT_FAIL_IO;
   }
 
   void *mem = malloc(filesize);
   if (mem == NULL) {
     fprintf(stderr, "Failed to allocate memory\n");
     fclose(file);
-    return false;
+    return RESULT_FAIL_MEM;
   }
 
   if (fread(mem, filesize, 1, file) != 1) {
     fprintf(stderr, "Failed to read data\n");
     fclose(file);
     free(mem);
-    return false;
+    return RESULT_FAIL_IO;
   }
 
   fclose(file);
 
   *data_out = mem;
   *size_out = filesize;
-  return true;
+
+  return RESULT_SUCCESS;
 }
 
 size_t readline(char *src, char *dest, size_t srclim, size_t destlim) {

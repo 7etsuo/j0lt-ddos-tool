@@ -201,9 +201,9 @@ int main(int argc, char **argv) {
 
   printf("+ resolv list saved to %s\n", savepath);
 
-  void *resolvlist = NULL;
+  void *resolvlist_buffer = NULL;
   size_t szresolvlist = 0;
-  if (read_file_into_mem(savepath, &resolvlist, &szresolvlist) == false) {
+  if (read_file_into_mem(savepath, &resolvlist_buffer, &szresolvlist) == false) {
     err_exit("* file read error");
     free(savepath);
   }
@@ -212,7 +212,7 @@ int main(int argc, char **argv) {
   char payload[NS_PACKETSZ], lineptr[MAX_LINE_SZ_J0LT];
   while (opts.nthreads >= 1) {
     nread = 0;
-    char *resolvptr = (char *)resolvlist;
+    char *resolvptr = (char *)resolvlist_buffer;
     if (opts.debug_mode == true)
       printf("+ current attack nthreads %d \n", opts.nthreads);
     while ((nread = readline(lineptr, resolvptr, MAX_LINE_SZ_J0LT,
