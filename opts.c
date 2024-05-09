@@ -60,12 +60,15 @@ Result_T get_opt_nthreads(JoltOptions *opts, const char *optarg) {
   return RESULT_SUCCESS;
 }
 
-Result_T parse_opts(JoltOptions *opts, int argc, const char *const *const argv) {
+Result_T parse_opts(JoltOptions *opts, int argc,
+                    const char *const *const argv) {
   assert(argc > 0 && argv != NULL);
+
+  init_opts(opts);
 
   Result_T result = RESULT_SUCCESS;
 
-  int opt = getopt(argc, (char * const *)argv, GLOBAL_STRING_OPTS);
+  int opt = getopt(argc, (char *const *)argv, GLOBAL_STRING_OPTS);
   do {
     switch (opt) {
       case 't':
@@ -87,7 +90,7 @@ Result_T parse_opts(JoltOptions *opts, int argc, const char *const *const argv) 
         result = RESULT_FAIL_ARG;
         break;
     }
-  } while ((opt = getopt(argc, (char * const *)argv, GLOBAL_STRING_OPTS)) != -1);
+  } while ((opt = getopt(argc, (char *const *)argv, GLOBAL_STRING_OPTS)) != -1);
 
   if (result == RESULT_FAIL_ARG)
     fprintf(stderr,
@@ -95,7 +98,6 @@ Result_T parse_opts(JoltOptions *opts, int argc, const char *const *const argv) 
 
   return result;
 }
-
 
 void init_opts(JoltOptions *opts) {
   assert(opts != NULL);

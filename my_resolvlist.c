@@ -4,11 +4,14 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "io.h"
 #include "process_control.h"
+#include "my_resolvlist.h"
+#include "my_types.h"
 #include "result.h"
+#include "io.h"
 
 char **environ;
+GLOBAL_STRING_TYPE GLOBAL_STRING_RESOLV_LIST_SAVE_NAME = "logs/j0lt-resolv.txt";
 
 static Result_T do_wget_resolv_list(char *resolv_list_save_path) {
   if (resolv_list_save_path == NULL) return RESULT_FAIL_IO;
@@ -35,7 +38,7 @@ static Result_T do_wget_resolv_list(char *resolv_list_save_path) {
   return status;
 }
 
-Result_T wget_resolvlist_and_save_path(const char *const pathname,
+static Result_T wget_resolvlist_and_save_path(const char *const pathname,
                                        char **result_path) {
   *result_path = get_current_directory_with_filename(pathname);
   if (*result_path == NULL) return RESULT_FAIL_IO;
@@ -47,4 +50,19 @@ Result_T wget_resolvlist_and_save_path(const char *const pathname,
   }
 
   return status;
+}
+
+static Result_T read_resolver_list_into_mem(char *filename, void **data_out, size_t *size_out) {
+  Result_T result = read_file_into_mem(filename, data_out, size_out); 
+  free(filename);
+  return result;
+}
+
+Result_T get_resolver_list(void **data_out, size_t *size_out) {
+  char *full_resolv_pathname = NULL;
+  Result_T result = wget_resolvlist_and_save_path(GLOBAL_STRING_RESOLV_LIST_SAVE_NAME, &full_resolv_pathname);
+  if (result != RESULT_SUCCESS) return result;
+  printf("+ resolv list saved to %s\n", full_resolv_pathname);
+
+  return read_resolver_list_into_mem(full_resolv_pathname, data_out, size_out);
 }

@@ -2,8 +2,10 @@
 #define MY_RESOLVLIST_H
 
 #include "result.h"
+#include "my_types.h"
 
-Result_T wget_resolvlist_and_save_path(const char *const pathname,
-                                       char **result_path);
+extern GLOBAL_STRING_TYPE GLOBAL_STRING_RESOLV_LIST_SAVE_NAME;
 
-#endif // MY_RESOLVLIST_H
+Result_T get_resolver_list(void **data_out, size_t *size_out);
+
+#endif  // MY_RESOLVLIST_H

