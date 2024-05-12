@@ -86,7 +86,7 @@ bool insert_data(void **dst, size_t *dst_buflen, const void *src,
   return true;
 }
 
-void print_hex(void *data, size_t len) {
+void print_hex(const void *data, size_t len) {
   if (data == NULL) {
     fprintf(stderr, "NULL pointer error\n");
     return;
