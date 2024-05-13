@@ -14,4 +14,7 @@ bool insert_data(void **dst, size_t *dst_buflen, const void *src,
                  size_t src_len);
 char *get_current_directory_with_filename(const char *const filename);
 
+Result_T do_allocate_buffer(void **data_out, size_t size);
+Result_T do_deallocate_buffer(void **data, size_t size);
+
 #endif  // IO_H

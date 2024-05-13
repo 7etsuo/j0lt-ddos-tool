@@ -1,7 +1,7 @@
 CC=gcc
-CFLAGS=-Wall -Wextra
+CFLAGS=-Wall -Wextra -g
 TARGET=j0lt
-OBJS=j0lt.o io.o opts.o process_control.o my_resolvlist.o
+OBJS=j0lt.o io.o opts.o process_control.o my_resolvlist.o j0lt_attack.c j0lt_network.c
 
 all: $(TARGET)
 
@@ -23,6 +23,11 @@ process_control.o: process_control.c process_control.h
 my_resolvlist.o: my_resolvlist.c my_resolvlist.h
 	$(CC) $(CFLAGS) -c my_resolvlist.c
 
+j0lt_attack.o: j0lt_attack.c j0lt_attack.h
+	$(CC) $(CFLAGS) -c j0lt_attack.c
+
+j0lt_network.o: j0lt_network.c j0lt_network.h
+	$(CC) $(CFLAGS) -c j0lt_network.c
+
 clean:
 	rm -f $(TARGET) $(OBJS)
-

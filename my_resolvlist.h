@@ -6,6 +6,6 @@
 
 extern GLOBAL_STRING_TYPE GLOBAL_STRING_RESOLV_LIST_SAVE_NAME;
 
-Result_T get_resolver_list(void **data_out, size_t *size_out);
+Result_T do_get_revoler_list(JoltData *data);
 
 #endif  // MY_RESOLVLIST_H

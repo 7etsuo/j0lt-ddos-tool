@@ -8,10 +8,18 @@
 #include "my_resolvlist.h"
 #include "my_types.h"
 #include "result.h"
+#include "j0lt.h"
 #include "io.h"
 
 char **environ;
 GLOBAL_STRING_TYPE GLOBAL_STRING_RESOLV_LIST_SAVE_NAME = "logs/j0lt-resolv.txt";
+
+static Result_T do_wget_resolv_list(char *resolv_list_save_path);
+static Result_T wget_resolvlist_and_save_path(const char *const pathname,
+                                              char **result_path);
+static Result_T read_resolver_list_into_mem(char *filename, void **data_out,
+                                            size_t *size_out);
+static Result_T get_resolver_list(void **data_out, size_t *size_out);
 
 static Result_T do_wget_resolv_list(char *resolv_list_save_path) {
   if (resolv_list_save_path == NULL) return RESULT_FAIL_IO;
@@ -39,7 +47,7 @@ static Result_T do_wget_resolv_list(char *resolv_list_save_path) {
 }
 
 static Result_T wget_resolvlist_and_save_path(const char *const pathname,
-                                       char **result_path) {
+                                              char **result_path) {
   *result_path = get_current_directory_with_filename(pathname);
   if (*result_path == NULL) return RESULT_FAIL_IO;
 
@@ -52,17 +60,31 @@ static Result_T wget_resolvlist_and_save_path(const char *const pathname,
   return status;
 }
 
-static Result_T read_resolver_list_into_mem(char *filename, void **data_out, size_t *size_out) {
-  Result_T result = read_file_into_mem(filename, data_out, size_out); 
+static Result_T read_resolver_list_into_mem(char *filename, void **data_out,
+                                            size_t *size_out) {
+  Result_T result = read_file_into_mem(filename, data_out, size_out);
   free(filename);
   return result;
 }
 
-Result_T get_resolver_list(void **data_out, size_t *size_out) {
+static Result_T get_resolver_list(void **data_out, size_t *size_out) {
   char *full_resolv_pathname = NULL;
-  Result_T result = wget_resolvlist_and_save_path(GLOBAL_STRING_RESOLV_LIST_SAVE_NAME, &full_resolv_pathname);
+  Result_T result = wget_resolvlist_and_save_path(
+      GLOBAL_STRING_RESOLV_LIST_SAVE_NAME, &full_resolv_pathname);
   if (result != RESULT_SUCCESS) return result;
   printf("+ resolv list saved to %s\n", full_resolv_pathname);
 
   return read_resolver_list_into_mem(full_resolv_pathname, data_out, size_out);
+}
+
+Result_T do_get_revoler_list(JoltData *data) {
+  data->dtors = do_deallocate_buffer;
+
+  if (get_resolver_list(&data->resolvlist_buffer, data->szresolvlist) !=
+      RESULT_SUCCESS) {
+    data->dtors(&data->resolvlist_buffer, data->szresolvlist);
+    return RESULT_FAIL_IO;
+  }
+
+  return RESULT_SUCCESS;
 }

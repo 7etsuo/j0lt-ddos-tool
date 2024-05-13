@@ -9,9 +9,23 @@
 #include "io.h"
 #include "result.h"
 
+Result_T do_deallocate_buffer(void **data, size_t size) {
+  if (data == NULL) return RESULT_FAIL_MEM;
+  memset(*data, 0, size);
+  free(*data);
+  *data = NULL;
+}
+
+Result_T do_allocate_buffer(void **data_out, size_t size) {
+  if (size == 0) return RESULT_FAIL_MEM;
+  *data_out = malloc(size);
+  if (*data_out == NULL) return RESULT_FAIL_MEM;
+  return RESULT_SUCCESS;
+}
+
 Result_T read_file_into_mem(const char *filename, void **data_out,
                             size_t *size_out) {
-  if (filename == NULL || data_out == NULL || size_out == NULL) {
+  if (filename == NULL || size_out == NULL) {
     fprintf(stderr, "NULL pointer error\n");
     return RESULT_FAIL_ARG;
   }
@@ -22,6 +36,13 @@ Result_T read_file_into_mem(const char *filename, void **data_out,
     return RESULT_FAIL_IO;
   }
   size_t filesize = st.st_size;
+
+  if (do_allocate_buffer(data_out, filesize) != RESULT_SUCCESS) {
+#ifdef DEBUG
+    fprintf(stderr, "Failed to allocate memory\n");
+#endif  // DEBUG
+    return RESULT_FAIL_MEM;
+  }
 
   FILE *file = fopen(filename, "rb");
   if (file == NULL) {
