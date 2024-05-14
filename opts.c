@@ -104,7 +104,8 @@ Result_T parse_opts(JoltOptions *option_struct, int argc,
         result = RESULT_FAIL_ARG;
         break;
     }
-  } while ((opt = getopt(argc, (char *const *)argv_copy, GLOBAL_STRING_OPTS)) != -1);
+  } while ((opt = getopt(argc, (char *const *)argv_copy, GLOBAL_STRING_OPTS)) !=
+           -1);
 
   if (result == RESULT_FAIL_ARG)
     fprintf(stderr,
