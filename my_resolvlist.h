@@ -1,6 +1,7 @@
 #ifndef MY_RESOLVLIST_H
 #define MY_RESOLVLIST_H
 
+#include "j0lt.h"
 #include "result.h"
 #include "my_types.h"
 

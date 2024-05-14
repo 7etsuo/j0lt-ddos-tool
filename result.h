@@ -1,6 +1,8 @@
 #ifndef RESULT_H
 #define RESULT_H
 
+#include <stdbool.h>
+
 typedef enum {
   RESULT_SUCCESS,      // Indicates successful operation
   RESULT_FAIL_INIT,    // Initialization failure

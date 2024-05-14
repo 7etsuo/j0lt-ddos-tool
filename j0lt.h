@@ -3,6 +3,8 @@
 
 #include <stddef.h>  // for size_t
 
+#include "my_types.h"
+
 // [TODO] replace with CHECK_SUCCESS forall subroutines
 #include <stdlib.h>  // for exit, EXIT_FAILURE [TODO] remove with err_exit
 #include <stdio.h>   // for perror [TODO] remove with err_exit

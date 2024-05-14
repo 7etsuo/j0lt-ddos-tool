@@ -9,8 +9,8 @@
 #include "io.h"
 #include "result.h"
 
-Result_T do_deallocate_buffer(void **data, size_t size) {
-  if (data == NULL) return RESULT_FAIL_MEM;
+void do_deallocate_buffer(void **data, size_t size) {
+  if (data == NULL) return;
   memset(*data, 0, size);
   free(*data);
   *data = NULL;
@@ -149,4 +149,8 @@ char *get_current_directory_with_filename(const char *const filename) {
   free(cwd);
 
   return full_path;
+}
+
+void debug_print(bool condition, const char *message, int value) {
+  if (condition) printf(message, value);
 }

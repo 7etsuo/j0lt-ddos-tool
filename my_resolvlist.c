@@ -80,7 +80,7 @@ static Result_T get_resolver_list(void **data_out, size_t *size_out) {
 Result_T do_get_revoler_list(JoltData *data) {
   data->dtors = do_deallocate_buffer;
 
-  if (get_resolver_list(&data->resolvlist_buffer, data->szresolvlist) !=
+  if (get_resolver_list(&data->resolvlist_buffer, &data->szresolvlist) !=
       RESULT_SUCCESS) {
     data->dtors(&data->resolvlist_buffer, data->szresolvlist);
     return RESULT_FAIL_IO;

@@ -25,9 +25,10 @@
 #include "opts.h"             // Added for JoltOptions, init_opts, parse_opts
 #include "my_types.h"         // Added for GLOBAL_STRING_TYPE
 #include "my_resolvlist.h"    // Added for wget_resolvlist_and_save_path
+#include "j0lt_attack.h"      // Added for do_perform_attack
+
 #include "j0lt.h"             // Added for JoltData, perform_attack
 #include "j0lt_network.h"     // Added for forge_j0lt_packet
-#include "j0lt_attack.h"      // Added for do_perform_attack
 
 GLOBAL_STRING_TYPE GLOBAL_STRING_MENU = {
     " =========================================================\n"
@@ -41,10 +42,6 @@ GLOBAL_STRING_TYPE GLOBAL_STRING_MENU = {
     "           7etsuo: https://github.com/7etsuo           \n"};
 
 // [TODO] : use switch and create debug for Result_T
-void debug_print(bool condition, const char *message, int value);
-void debug_print(bool condition, const char *message, int value) {
-  if (condition) printf(message, value);
-}
 
 int main(int argc, char **argv) {
   printf("%s", GLOBAL_STRING_MENU);

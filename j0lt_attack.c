@@ -6,21 +6,19 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <arpa/nameser.h>
 
+#include "j0lt_network.h"
 #include "j0lt_attack.h"
 #include "result.h"
 #include "j0lt.h"
 #include "io.h"
 
-Result_T do_perform_attack(JoltData *data, JoltOptions *opts) {
-  if (perform_attack(*opts, data->resolvlist_buffer, data->szresolvlist) !=
-      RESULT_SUCCESS) {
-    data->dtors(&data->resolvlist_buffer, data->szresolvlist);
-    return RESULT_FAIL_IO;
-  }
+static void send_attacks(const char *payload, size_t szpayload,
+                         in_addr_t resolvip, bool debug_mode, int hex_mode);
 
-  return RESULT_SUCCESS;
-}
+static Result_T perform_attack(JoltOptions opts, void *resolvlist_buffer,
+                               size_t szresolvlist);
 
 static void send_attacks(const char *payload, size_t szpayload,
                          in_addr_t resolvip, bool debug_mode, int hex_mode) {
@@ -40,8 +38,9 @@ static Result_T perform_attack(JoltOptions opts, void *resolvlist_buffer,
 
   while (opts.nthreads >= 1) {
     int nread = 0;
-    debug_print(opts.debug_mode, "+ current attack nthreads %d \n",
-                opts.nthreads);
+    if (opts.debug_mode) printf("current attack nthreads %d \n", opts.nthreads);
+    // debug_print(opts.debug_mode, "+ current attack nthreads %d \n",
+    //             opts.nthreads);
 
     while ((nread = readline(lineptr, resolvptr, MAX_LINE_SZ_J0LT,
                              szresolvlist)) != 0) {
@@ -60,5 +59,15 @@ static Result_T perform_attack(JoltOptions opts, void *resolvlist_buffer,
     }
     opts.nthreads--;
   }
+  return RESULT_SUCCESS;
+}
+
+Result_T do_perform_attack(JoltData *data, JoltOptions *opts) {
+  if (perform_attack(*opts, data->resolvlist_buffer, data->szresolvlist) !=
+      RESULT_SUCCESS) {
+    data->dtors(&data->resolvlist_buffer, data->szresolvlist);
+    return RESULT_FAIL_IO;
+  }
+
   return RESULT_SUCCESS;
 }
