@@ -1,7 +1,7 @@
 CC=gcc
 CFLAGS=-Wall -Wextra -g
 TARGET=j0lt
-OBJS=j0lt.o io.o opts.o process_control.o my_resolvlist.o j0lt_attack.c j0lt_network.c
+OBJS=j0lt.o io.o opts.o process_control.o my_resolvlist.o j0lt_attack.o j0lt_network.o
 
 all: $(TARGET)
 
