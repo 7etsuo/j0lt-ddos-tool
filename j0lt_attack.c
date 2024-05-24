@@ -38,9 +38,9 @@ static Result_T perform_attack(JoltOptions opts, void *resolvlist_buffer,
 
   while (opts.nthreads >= 1) {
     int nread = 0;
-    if (opts.debug_mode) printf("current attack nthreads %d \n", opts.nthreads);
-    // debug_print(opts.debug_mode, "+ current attack nthreads %d \n",
-    //             opts.nthreads);
+
+    debug_print(opts.debug_mode, "+ current attack nthreads %d \n",
+                opts.nthreads);
 
     while ((nread = readline(lineptr, resolvptr, MAX_LINE_SZ_J0LT,
                              szresolvlist)) != 0) {

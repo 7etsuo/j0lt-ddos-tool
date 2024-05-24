@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,7 +12,7 @@
 #include <stdint.h>
 #include <assert.h>
 #include <ctype.h>
- 
+
 #include "io.h"
 #include "j0lt.h"
 #include "j0lt_network.h"
@@ -59,9 +60,44 @@ DEFINE_INSERT_FN(qword, uint64_t)
 #undef DEFINE_INSERT_FN
 
 bool is_valid_ip4(const char *str) {
-  int i;
-  for (i = 0; isdigit(str[i]); i++);
-  return str[i] == '.';
+  int segments = 0;
+  int ch_count = 0;
+
+  if (str == NULL) {
+    return false;
+  }
+
+  while (*str != '\0') {
+    if (!isdigit(*str) || ch_count == 3) {
+      return false;
+    }
+
+    if (ch_count == 0 && segments != 0) {
+      if (*(str - 1) != '.') {
+        return false;
+      }
+    }
+    ch_count++;
+    str++;
+
+    if (*str == '.' || *str == '\0') {
+      if (ch_count > 3) {
+        return false;
+      }
+
+      int val = atoi(str - ch_count);
+
+      if (val < 0 || val > 255) {
+        return false;
+      }
+
+      if (*str == '.') str++;
+      segments++;
+      ch_count = 0;
+    }
+  }
+
+  return segments == 4;
 }
 
 // [TODO] refactor this ugly ass pos
@@ -267,3 +303,29 @@ uint16_t j0lt_checksum(const uint16_t *addr, size_t count) {
 
   return ~((uint16_t)((sum << 8) | (sum >> 8)));
 }
+
+#if defined(TEST_J0LT_NETWORK)
+int main(void) {
+  char payload[NS_PACKETSZ];
+  size_t szpayload;
+
+  // write valid tests for is_valid_ip4
+  assert(is_valid_ip4("127.0.0.1"));  // true
+  printf("+ passed is_valid_ip4 test number 1\n");
+  assert(is_valid_ip4("0.0.0.0"));  // true
+  printf("+ passed is_valid_ip4 test number 2\n");
+  assert(is_valid_ip4("255.255.255.255"));  // true
+  printf("+ passed is_valid_ip4 test number 3\n");
+
+  // write invalid tests for is_valid_ip4
+  assert(!is_valid_ip4("256.0.0.0"));  // false
+  printf("+ passed is_valid_ip4 test number 4\n");
+  assert(!is_valid_ip4("asshole"));  // false
+  printf("+ passed is_valid_ip4 test number 5\n");
+
+  // szpayload = forge_j0lt_packet(payload, htonl(0x08080808),
+  // htonl(0x08080808), htons(53)); print_hex(payload, szpayload);
+
+  return 0;
+}
+#endif  // TEST_J0LT_NETWORK

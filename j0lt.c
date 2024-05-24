@@ -19,16 +19,16 @@
  * ------------------------------------------------------------
  */
 
-#include "io.h"               // Added for read_file_into_mem, readline, print_hex
-#include "result.h"           // Added for Result_T
+#include "io.h"      // Added for read_file_into_mem, readline, print_hex
+#include "result.h"  // Added for Result_T
 #include "process_control.h"  // Added for init_spawnattr, spawn_process, destroy_spawnattr
 #include "opts.h"             // Added for JoltOptions, init_opts, parse_opts
-#include "my_types.h"         // Added for GLOBAL_STRING_TYPE
-#include "my_resolvlist.h"    // Added for wget_resolvlist_and_save_path
-#include "j0lt_attack.h"      // Added for do_perform_attack
+#include "my_types.h"       // Added for GLOBAL_STRING_TYPE
+#include "my_resolvlist.h"  // Added for wget_resolvlist_and_save_path
+#include "j0lt_attack.h"    // Added for do_perform_attack
 
-#include "j0lt.h"             // Added for JoltData, perform_attack
-#include "j0lt_network.h"     // Added for forge_j0lt_packet
+#include "j0lt.h"          // Added for JoltData, perform_attack
+#include "j0lt_network.h"  // Added for forge_j0lt_packet
 
 GLOBAL_STRING_TYPE GLOBAL_STRING_MENU = {
     " =========================================================\n"
@@ -43,6 +43,7 @@ GLOBAL_STRING_TYPE GLOBAL_STRING_MENU = {
 
 // [TODO] : use switch and create debug for Result_T
 
+#ifndef DEBUG
 int main(int argc, char **argv) {
   printf("%s", GLOBAL_STRING_MENU);
 
@@ -58,3 +59,4 @@ int main(int argc, char **argv) {
 
   return 0;
 }
+#endif  // DEBUG

@@ -72,21 +72,21 @@ Result_T read_file_into_mem(const char *filename, void **data_out,
   return RESULT_SUCCESS;
 }
 
-size_t readline(char *src, char *dest, size_t srclim, size_t destlim) {
+size_t readline(const char *src, char *dest, size_t srclim, size_t destlim) {
   if (src == NULL || dest == NULL) {
     fprintf(stderr, "NULL pointer error\n");
     return 0;
   }
 
   size_t i;
-  for (i = 0; i < srclim - 1 && i < destlim - 1; ++i) {
-    if (*dest == '\n') {
+  for (i = 0; i < srclim && i < destlim - 1; ++i) {
+    if (src[i] == '\n') {
       break;
     }
-    src[i] = *dest++;
+    dest[i] = src[i];
   }
 
-  src[i] = '\0';
+  dest[i] = '\0';
 
   return i;
 }
